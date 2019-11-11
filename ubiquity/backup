@@ -1,0 +1,37 @@
+#!/bin/bash
+#Skripta za backup Ubnt uredjaja
+# ubnts.txt je fajl sa ip adresama uredjaja
+#backup-$i.cfg je ime backup fajla koji se pravi $i oznacava ip adresu
+
+echo "Unesite korisnicko ime: "
+read korisnik
+echo "Unesite loziku za korisnicko ime $korisnik: "
+read -s lozinka
+DANAS=$(date +%F)
+
+COUNTER=0
+POCETAK=$(date +%H:%M:%S)
+mkdir ~/backups/ubnt/$DANAS
+
+for i in $(cat ~/ubnt-backup-script/ubnts.txt); do
+COUNTER=$((COUNTER + 1))
+
+sshpass -p "$lozinka"  ssh -oStrictHostKeyChecking=no -o ConnectTimeout=20 $i -l$korisnik "cat /tmp/system.cfg" > ~/backups/ubnt/$DANAS/backup-$i.cfg 
+echo -e $COUNTER"." "Backup uredjaja sa ip adresom: \033[1m$i\033[0m zavrsen."
+done
+
+TOTAL=$(echo $COUNTER)
+
+for f in $(cat ~/ubnt-backup-script/ubnts.txt); do
+if [ ! -s ~/backups/ubnt/$DANAS/backup-$f.cfg ];
+ then
+echo -e "Backup na \033[1m$f\033[0m nije uradjen." && COUNTER=$((COUNTER - 1 )) && rm ~/backups/ubnt/$DANAS/backup-$f.cfg
+fi
+done
+
+
+
+#ncftpput -u $ftpuser -p $ftppass -R -a $ftpserver /backups/ubnt/ ~/backups/ubnt/$DANAS
+KRAJ=$(date +%b-%d-%H:%M:%S)
+echo -e "Skripta pokrenuta u: \033[1m$POCETAK\033[0m \n         zavrsena u: \033[1m$KRAJ\033[0m"
+echo -e "Backup uradjen na \033[1m$COUNTER\033[0m od ukupno \033[1m$TOTAL\033[0m Ubiquity uredjaja."
