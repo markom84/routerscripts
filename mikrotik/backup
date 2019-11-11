@@ -1,0 +1,33 @@
+#!/bin/bash
+read -p "Unesite korisnicko ime: " korisnik
+read -sp "Unesite lozinku: " lozinka
+
+SAD=$(date +%F)
+COUNTER=0
+
+mkdir ~/backups/mikrotik/$SAD
+POCETAK=$(date +%H:%M:%S)
+
+for i in $(cat ~/mikrotik-backup-script/tiks.txt); do
+COUNTER=$((COUNTER + 1))
+echo -e $COUNTER"." "Backup uredjaja \033[1m$i\033[0m" 
+sshpass -p "$lozinka" ssh -oStrictHostKeyChecking=no  -o ConnectTimeout=20 $i -l $korisnik system backup save name=$SAD
+sshpass -p "$lozinka" scp -oStrictHostKeyChecking=no  -o ConnectTimeout=20 $korisnik@$i:$SAD.backup ~/backups/mikrotik/$SAD/$i.backup
+
+
+echo "Backup zavrsen"
+done
+TOTAL=$(echo $COUNTER)
+for f in $(cat ~/mikrotik-backup-script/tiks.txt); do
+if [ ! -f ~/backups/mikrotik/$SAD/$f.backup ];
+ then
+echo -e "Backup za \033[1m$f\033[0m nije uradjen " && COUNTER=$((COUNTER - 1 ))
+fi
+done
+
+
+#Copy files to FTP server
+#ncftpput -u $ftpuser -p $ftppass -R $ftpserver /backups/mikrotik/ ~/backups/mikrotik/$SAD
+KRAJ=$(date +%b-%d-%H:%M:%S)
+echo -e "Skripta pokrenuta u: \033[1m$POCETAK\033[0m \n         zavrsena u: \033[1m$KRAJ\033[0m"
+echo -e "Backup uradjen na \033[1m$COUNTER\033[0m od ukupno \033[1m$TOTAL\033[0m Mikrotik uredjaja."
