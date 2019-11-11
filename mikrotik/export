@@ -1,0 +1,33 @@
+#!/bin/bash
+read -p "Unesite korisnicko ime: " korisnik
+read -sp "Unesite lozinku: " lozinka
+
+SAD=$(date +%F)
+mkdir ~/backups/mikrotik/$SAD.exports
+COUNTER=0
+POCETAK=$(date +%H:%M:%S)
+
+for i in $(cat ~/mikrotik-backup-script/tiks.txt); do
+COUNTER=$((COUNTER + 1))
+echo -e $COUNTER"." "Export MikroTik-a \033[1m$i\033[0m"
+sshpass -p "$lozinka" ssh -oStrictHostKeyChecking=no -oHostKeyAlgorithms=+ssh-dss -o ConnectTimeout=20 $i -l $korisnik /export file=$SAD
+echo "Export napravljen"
+sshpass -p "$lozinka" scp -oStrictHostKeyChecking=no -oHostKeyAlgorithms=+ssh-dss -o ConnectTimeout=20 $korisnik@$i:$SAD.rsc ~/backups/mikrotik/$SAD.exports/$i.rsc
+
+echo "Export preuzet"
+done
+TOTAL=$(echo $COUNTER)
+for f in $(cat ~/mikrotik-backup-script/tiks.txt); do
+if [ ! -f ~/backups/mikrotik/$SAD.exports/$f.rsc ];
+ then
+echo -e "Export za \033[1m$f\033[0m nije uradjen " && COUNTER=$((COUNTER - 1 ))
+fi
+done
+echo -e "\033[1m -------------------------------------------------------------------------------------------------------\033[0m"
+
+#Backup exports to FTP server
+#ncftpput -u $ftpuser -p $ftppass -R -a $ftpserver /backups/mikrotik/ ~/backups/mikrotik/$SAD.exports
+
+KRAJ=$(date +%b-%d-%H:%M:%S)
+echo -e "Skripta pokrenuta u: \033[1m$POCETAK\033[0m \n         zavrsena u: \033[1m$KRAJ\033[0m"
+echo -e "Export uradjen na \033[1m$COUNTER\033[0m od ukupno \033[1m$TOTAL\033[0m Mikrotik uredjaja."
