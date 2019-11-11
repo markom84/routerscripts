@@ -1,0 +1,14 @@
+#!/bin/bash
+
+DUDELIST="~/mikrotik-backup-script/dudes.txt"
+SAD=$(date +%F)
+
+read -p "Unesite korisnicko ime: " korisnik
+read -sp "Unesite lozinku: " lozinka
+
+for i in $(cat $DUDELIST); do
+sshpass -p "$lozinka" ssh -oStrictHostKeyChecking=no  -o ConnectTimeout=20 $i -l $korisnik dude export-db backup-file=$SAD
+sshpass -p "$lozinka" scp -oStrictHostKeyChecking=no  -o ConnectTimeout=20 $korisnik@$i:$SAD ~/backups/dude/$i-$SAD
+
+echo "Backup zavrsen"
+done
